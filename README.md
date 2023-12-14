@@ -18,7 +18,7 @@
 # 安装编译环境
 [wails安装参考教程](https://v3alpha.wails.io/getting-started/installation/)
 
-**v3处于alpha测试版本，位方便构建开发，已内置wailsv3代码在该仓库中，可以直接进入安装wails3**
+**v3处于alpha测试版本，为方便构建开发，已内置wailsv3代码在该仓库中，可以直接进入安装wails3**
 ```
 cd wails/v3/cmd/wails3
 go install
