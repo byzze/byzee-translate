@@ -3,6 +3,9 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"handy-translate/os_api/windows"
+	"log/slog"
+	"syscall"
 	"testing"
 
 	"github.com/go-vgo/robotgo"
@@ -29,4 +32,21 @@ func TestMouseClickPos(t *testing.T) {
 	})
 	s := hook.Start()
 	<-hook.Process(s)
+}
+
+func TestWindowshow(t *testing.T) {
+	windowName := "ToolBar"
+	w := windows.FindWindow(windowName)
+	w.ShowForWindows()
+
+	lpWindowName, err := syscall.UTF16PtrFromString(windowName)
+	if err != nil {
+		slog.Error("UTF16PtrFromString", err)
+	}
+
+	// find window
+	hwnd := win.FindWindow(nil, lpWindowName)
+	if hwnd == 0 {
+		slog.Error("FindWindow Failed")
+	}
 }

@@ -39,29 +39,34 @@ var lastKeyPressTime time.Time
 
 var lastMouseTime time.Time
 
+var pressCount int
+
 // DafaultHook register hook event
 func DafaultHook(app *application.App) {
 	if runtime.GOOS == "windows" {
 		go windows.WindowsHook() // 完善，robotgo处理的不完美
 	}
 
-	hook.Register(hook.KeyDown, []string{"c", "c", "ctrl"}, func(e hook.Event) {
-		slog.Info("ctrl+c+c", e)
-		if pressLock.TryLock() {
+	hook.Register(hook.KeyDown, []string{"c", "ctrl"}, func(e hook.Event) {
+		pressLock.Lock()
+		defer pressLock.Unlock()
+		if pressCount == 0 {
 			lastKeyPressTime = time.Now()
+			pressCount++
 		} else {
 			elapsed := time.Since(lastKeyPressTime)
 			// Check if the time elapsed is greater than 500 milliseconds
-			if elapsed.Milliseconds() < 800 {
+			if elapsed.Milliseconds() < 300 {
+				slog.Info("ctrl+c+c", e)
 				HookChan <- struct{}{}
+				// Reset pressCount after successful trigger
 			}
-			pressLock.Unlock()
+			pressCount = 0
 		}
 	})
 
 	screenshotKey := config.Data.Keyboards["screenshot"]
 	hook.Register(hook.KeyDown, screenshotKey, func(e hook.Event) {
-		slog.Info("screenshot", e)
 		base64Image := screenshot.ScreenshotFullScreen()
 		app.Events.Emit(&application.WailsEvent{Name: "screenshotBase64", Data: base64Image})
 

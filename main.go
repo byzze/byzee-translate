@@ -30,8 +30,9 @@ var appInfo = &App{}
 
 var fromLang, toLang = "auto", "zh"
 
+var projectName = "handy-translate"
+
 func main() {
-	var projectName = "handy-translate"
 	app = application.New(application.Options{
 		Name: projectName,
 		Bind: []any{
