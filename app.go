@@ -15,7 +15,6 @@ import (
 	"runtime"
 
 	"github.com/go-vgo/robotgo"
-	"github.com/sirupsen/logrus"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -31,12 +30,9 @@ func (a *App) MyFetch(URL string, content map[string]interface{}) interface{} {
 }
 
 // Transalte 翻译逻辑
-func (a *App) Transalte(queryText, fromLang, toLang string) string {
-	app.Logger.Info("Transalte",
-		slog.Any("queryText", queryText),
-		slog.Any("toLang", toLang),
-		slog.Any("fromLang", fromLang))
-
+func (a *App) Transalte(queryText, fl, tl string) string {
+	fromLang = fl
+	toLang = tl
 	res := processTranslate(queryText)
 	return res
 }
@@ -46,7 +42,7 @@ func (a *App) GetTransalteMap() string {
 	var translateList = config.Data.Translate
 	bTranslate, err := json.Marshal(translateList)
 	if err != nil {
-		logrus.WithError(err).Error("Marshal")
+		slog.Error("Marshal", slog.Any("err", err))
 	}
 	return string(bTranslate)
 }
@@ -62,6 +58,12 @@ func (a *App) SetTransalteWay(translateWay string) {
 // GetTransalteWay 获取当前翻译的服务
 func (a *App) GetTransalteWay() string {
 	return config.Data.TranslateWay
+}
+
+func (a *App) SetFromToLang(fl, tl string) {
+
+	fromLang = fl
+	toLang = tl
 }
 
 // Show 通过名字控制窗口事件
@@ -143,7 +145,6 @@ func processToolbarShow() {
 
 // CaptureSelectedScreen 截取选中的区域
 func (a *App) CaptureSelectedScreen(startX, startY, width, height float64) {
-
 	croppedImg := screenshot.CaptureSelectedScreen(int(startX), int(startY), int(width), int(height))
 	if croppedImg == nil {
 		return
@@ -161,7 +162,7 @@ func (a *App) CaptureSelectedScreen(startX, startY, width, height float64) {
 
 	err = saveBase64Image(base64String, filename)
 	if err != nil {
-		logrus.Fatal("保存图片出错: ", err)
+		slog.Error("保存图片出错: ", err)
 	}
 
 	// OCR解析文本

@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-vgo/robotgo"
 	hook "github.com/robotn/gohook"
-	"github.com/sirupsen/logrus"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -21,13 +20,16 @@ var HookChan = make(chan struct{}, 1)
 
 var defaulthook = func(e hook.Event) {
 	if e.Button == hook.MouseMap["center"] {
+		slog.Info("mouse center down", slog.Any("evnet", e))
+		robotgo.KeyTap("c", "ctrl")
 		HookChan <- struct{}{}
 	}
 }
 
 var keyboardhook = func(e hook.Event) {
 	if pressLock.TryLock() {
-		logrus.Info(e)
+		slog.Info("keyboardhook", slog.Any("event", e))
+
 		robotgo.KeyTap("c", "ctrl")
 		time.Sleep(time.Millisecond * 100)
 		HookChan <- struct{}{}
@@ -44,7 +46,10 @@ var pressCount int
 // DafaultHook register hook event
 func DafaultHook(app *application.App) {
 	if runtime.GOOS == "windows" {
-		go windows.WindowsHook() // 完善，robotgo处理的不完美
+		go windows.WindowsHook(HookChan) // 完善，robotgo处理的不完美, 使用windows 原生api
+	} else {
+		// default mid mouse
+		hook.Register(hook.MouseDown, []string{}, defaulthook)
 	}
 
 	hook.Register(hook.KeyDown, []string{"c", "ctrl"}, func(e hook.Event) {
@@ -57,7 +62,7 @@ func DafaultHook(app *application.App) {
 			elapsed := time.Since(lastKeyPressTime)
 			// Check if the time elapsed is greater than 500 milliseconds
 			if elapsed.Milliseconds() < 300 {
-				slog.Info("ctrl+c+c", e)
+				slog.Info("ctrl+c+c", slog.Any("event", e))
 				HookChan <- struct{}{}
 				// Reset pressCount after successful trigger
 			}
@@ -72,9 +77,6 @@ func DafaultHook(app *application.App) {
 
 	})
 
-	// default mid mouse
-	hook.Register(hook.MouseDown, []string{}, defaulthook)
-
 	s := hook.Start()
 	<-hook.Process(s)
 }
@@ -83,7 +85,7 @@ var pressLock sync.RWMutex
 
 // ToolBarHook register hook event 用于配置快捷键 TODO
 func ToolBarHook() {
-	logrus.Info("--- Please wait hook starting ---")
+	slog.Info("--- Please wait hook starting ---")
 	hook.End()
 	if len(config.Data.Keyboards) == 0 || config.Data.Keyboards["center"][0] == "center" {
 		hook.Register(hook.MouseDown, []string{}, defaulthook)

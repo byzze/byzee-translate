@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"handy-translate/config"
 	"io"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 const Way = "baidu"
@@ -42,9 +41,7 @@ type TransResult struct {
 }
 
 func (b *Baidu) PostQuery(query, fromLang, toLang string) ([]string, error) {
-	logrus.WithFields(logrus.Fields{
-		"query": query, "fromLang": fromLang, "toLang": toLang,
-	}).Info("PostQuery")
+	slog.Info("PostQuery", slog.String("query", query), slog.String("fromLang", fromLang), slog.String("toLang", toLang))
 	endpoint := "http://api.fanyi.baidu.com"
 	path := "/api/trans/vip/translate"
 	uri := endpoint + path
@@ -70,14 +67,14 @@ func (b *Baidu) PostQuery(query, fromLang, toLang string) ([]string, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", uri, strings.NewReader(form.Encode()))
 	if err != nil {
-		fmt.Println("Error creating request:", err)
+		slog.Error("Error creating request:", err)
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error sending request:", err)
+		slog.Error("Error sending request:", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -85,18 +82,18 @@ func (b *Baidu) PostQuery(query, fromLang, toLang string) ([]string, error) {
 	// Read response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error reading response:", err)
+		slog.Error("Error reading response:", err)
 		return nil, err
 	}
 
 	var result translateResult
 	if err := json.Unmarshal(body, &result); err != nil {
-		logrus.Error("Error:", err)
+		slog.Error("Error:", err)
 		return nil, err
 	}
 
 	prettyResult, _ := json.MarshalIndent(result, "", "    ")
-	logrus.Println(string(prettyResult))
+	slog.Info(string(prettyResult))
 
 	if len(result.TransResult) > 0 {
 		if result.TransResult[0].Dst == result.TransResult[0].Src {

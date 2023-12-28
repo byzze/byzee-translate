@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"handy-translate/config"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 // https://docs.caiyunapp.com/blog/2021/12/30/hello-world
@@ -52,13 +51,11 @@ func (c *Caiyun) PostQuery(query, fromLang, toLang string) ([]string, error) {
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		logrus.Println("Error marshaling payload:", err)
 		return nil, err
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		logrus.Println("Error creating request:", err)
 		return nil, err
 	}
 
@@ -68,26 +65,24 @@ func (c *Caiyun) PostQuery(query, fromLang, toLang string) ([]string, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		logrus.Println("Error sending request:", err)
 		return nil, err
 	}
 
 	if resp.StatusCode != 200 {
-		logrus.Println(resp)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Println("Error reading response body:", err)
 		return nil, err
 	}
-	logrus.Println(string(respBody))
+
+	slog.Info(string(respBody))
 	var translationResponse TranslationResponse
 	err = json.Unmarshal(respBody, &translationResponse)
+
 	if err != nil {
-		logrus.Println("Error unmarshaling response body:", err)
 		return nil, err
 	}
 

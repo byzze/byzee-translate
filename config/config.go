@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
-	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/slog"
 )
 
 // Data config
@@ -36,14 +36,14 @@ func Init(projectName string) {
 
 	configFile, err := os.Open(configPath + "/config.toml")
 	if err != nil {
-		logrus.WithError(err).Error("Open")
+		slog.Error("Open", err)
 		os.Exit(1)
 	}
 	defer configFile.Close()
 
 	fd, err := io.ReadAll(configFile)
 	if err != nil {
-		logrus.WithError(err).Error("ReadAll")
+		slog.Error("ReadAll", err)
 		os.Exit(1)
 	}
 	err = toml.Unmarshal(fd, &Data)
@@ -58,7 +58,7 @@ func Save() {
 	filePath := "./config.toml"
 	data, err := toml.Marshal(&Data)
 	if err != nil {
-		logrus.WithError(err).Error("Marshal")
+		slog.Error("Marshal", err)
 	}
 
 	// 使用 os.Remove() 函数删除文件
@@ -80,9 +80,8 @@ func Save() {
 
 	_, err = file.Write(data)
 	if err != nil {
-		fmt.Println("无法写入文件:", err)
+		slog.Error("无法写入文件", err)
 		return
 	}
-
-	fmt.Println("数据写入成功!")
+	slog.Info("数据写入成功!!!")
 }

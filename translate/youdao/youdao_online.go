@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"handy-translate/config"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
-
-	"github.com/sirupsen/logrus"
 )
 
 const YaoDaoOnlineWay = "youdao_online"
@@ -39,7 +38,7 @@ func (y *YoudaoOnline) PostQuery(query string) []string {
 
 	err = json.Unmarshal(body, &tr)
 	if err != nil {
-		logrus.WithError(err).Error("Unmarshal")
+		slog.Error("Unmarshal", err)
 		return nil
 	}
 	if len(tr.Data.Entries) > 0 {

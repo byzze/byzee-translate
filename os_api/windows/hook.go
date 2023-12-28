@@ -1,9 +1,11 @@
 package windows
 
 import (
+	"log/slog"
 	"runtime"
 	"sync"
 	"syscall"
+	"time"
 	"unsafe"
 
 	"github.com/go-vgo/robotgo"
@@ -50,6 +52,8 @@ var (
 
 var PressLock sync.RWMutex
 
+var hc chan struct{}
+
 // LowLevelMouseProc 代用windows api 才能做到选中文字，鼠标事件触发前执行模拟ctrl + c 操作
 func LowLevelMouseProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 	runtime.LockOSThread()
@@ -68,14 +72,18 @@ func LowLevelMouseProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 		case WM_RBUTTONUP:
 			// fmt.Println("右键释放")
 		case WM_MBUTTONDOWN:
+			slog.Info("触发拷贝动作")
 			robotgo.KeyTap("c", "ctrl")
+			time.Sleep(time.Millisecond * 100)
+			hc <- struct{}{}
 		case WM_MBUTTONUP:
 		}
 	}
 	return r1
 }
 
-func WindowsHook() {
+func WindowsHook(hookchan chan struct{}) {
+	hc = hookchan
 	hHook, _, _ = setWindowsHookEx.Call(uintptr(WH_MOUSE_LL), syscall.NewCallback(LowLevelMouseProc), 0, 0)
 
 	defer unhookWindowsHookEx.Call(hHook)

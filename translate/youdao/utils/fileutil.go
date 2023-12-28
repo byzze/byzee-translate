@@ -3,9 +3,8 @@ package utils
 import (
 	base64util "encoding/base64"
 	"io/ioutil"
+	"log/slog"
 	"os"
-
-	"github.com/sirupsen/logrus"
 )
 
 func SaveFile(path string, data []byte, needDecode bool) {
@@ -15,24 +14,24 @@ func SaveFile(path string, data []byte, needDecode bool) {
 		data, _ = base64util.StdEncoding.DecodeString(base64)
 	}
 	if err != nil {
-		logrus.Print("file create failed. err: " + err.Error())
-	} else {
-		file.Write(data)
+		slog.Error("file create failed. err: ", err)
+		return
 	}
+	file.Write(data)
 }
 
 func ReadFileAsBase64(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		logrus.Print("file read failed. err: " + err.Error())
+		slog.Error("file read failed. err: ", err)
 		return "", err
-	} else {
-		fd, err := ioutil.ReadAll(file)
-		if err != nil {
-			logrus.Print("file read failed. err: " + err.Error())
-			return "", err
-		} else {
-			return base64util.StdEncoding.EncodeToString(fd), nil
-		}
 	}
+
+	fd, err := ioutil.ReadAll(file)
+	if err != nil {
+		slog.Error("file read failed. err: ", err)
+		return "", err
+	}
+
+	return base64util.StdEncoding.EncodeToString(fd), nil
 }

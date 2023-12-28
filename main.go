@@ -9,9 +9,12 @@ import (
 	"handy-translate/screenshot"
 	"handy-translate/toolbar"
 	"handy-translate/translate"
+	"handy-translate/translate/baidu"
+	"handy-translate/translate/youdao"
 	"log"
 	"log/slog"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/go-vgo/robotgo"
@@ -115,6 +118,12 @@ func sendResult(result, explains string) {
 	app.Events.Emit(&application.WailsEvent{Name: "explains", Data: explains})
 }
 
+func isChinese(text string) bool {
+	// 使用正则表达式匹配中文字符
+	re := regexp.MustCompile("[\u4e00-\u9fa5]")
+	return re.MatchString(text)
+}
+
 // 监听处理鼠标事件
 func processHook() {
 	go hook.DafaultHook(app) // 使用robotgo处理
@@ -123,6 +132,20 @@ func processHook() {
 		select {
 		case <-hook.HookChan:
 			queryText, _ := robotgo.ReadAll()
+
+			// toolBar 中英互译
+			if isChinese(queryText) {
+				toLang = "en"
+			}
+
+			if !isChinese(queryText) {
+				switch config.Data.TranslateWay {
+				case youdao.Way:
+					toLang = "zh-CHS"
+				case baidu.Way:
+					toLang = "zh"
+				}
+			}
 
 			app.Logger.Info("GetQueryText",
 				slog.String("queryText", queryText),
@@ -133,9 +156,13 @@ func processHook() {
 				translate.SetQueryText(queryText)
 				translateRes := processTranslate(queryText)
 				// 发送结果至前端
+				if len(translateRes) == 0 {
+					translateRes = queryText
+				}
 				sendDataToJS(queryText, translateRes, "")
 				continue
 			}
+
 			processToolbarShow()
 		}
 	}
@@ -144,12 +171,15 @@ func processHook() {
 // 翻译处理
 func processTranslate(queryText string) string {
 	translateWay := translate.GetTransalteWay(config.Data.TranslateWay)
+
 	result, err := translateWay.PostQuery(queryText, fromLang, toLang)
 	if err != nil {
 		slog.Error("PostQuery", err)
 	}
 
 	app.Logger.Info("Transalte",
+		slog.Any("fromLang", fromLang),
+		slog.Any("toLang", toLang),
 		slog.Any("result", result),
 		slog.Any("translateWay", translateWay.GetName()))
 

@@ -6,9 +6,8 @@ import (
 	"handy-translate/config"
 	"handy-translate/translate/youdao/utils"
 	"handy-translate/translate/youdao/utils/authv3"
+	"log/slog"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 const Way = "youdao"
@@ -37,7 +36,7 @@ func (y *Youdao) PostQuery(query, fromLang, toLang string) ([]string, error) {
 
 	err := json.Unmarshal(result, &tr)
 	if err != nil {
-		logrus.Println(err)
+		slog.Error("PostQuery", err)
 		return nil, err
 	}
 
